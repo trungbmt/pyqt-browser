@@ -10,16 +10,29 @@ from normalTab import NormalTab as BrowserTab
 from incognitoTab import IncognitoTab
 from customTabBar import CustomTabWidget
 from PyQt6 import QtCore
-
+from PyQt6.QtWebEngineCore import QWebEngineHistoryItem
+from PyQt6.QtWebEngineWidgets import QWebEngineView
+from historyTab import HistoryWidget
+import datetime
+from PyQt6.QtGui import QGuiApplication
 
 class Browser(QMainWindow):
     def __init__(self, main, isIncognito = False):
         super().__init__()
+        self.setFocus()
+        
+        self.history = None
+        self.isIncognito = isIncognito
+
         self.main = main
+        
+        self.profile = QWebEngineView(self).page().profile()
+
+
         self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint)
         self.oldPos = self.pos()
 
-        self._keys = {Qt.Key.Key_Control: False, Qt.Key.Key_T: False, Qt.Key.Key_W: False, Qt.Key.Key_Shift: False, Qt.Key.Key_N: False}
+        self._keys = {Qt.Key.Key_Control: False, Qt.Key.Key_T: False, Qt.Key.Key_W: False, Qt.Key.Key_Shift: False, Qt.Key.Key_N: False, Qt.Key.Key_H: False}
         self.tabs = QTabWidget()
         self.tabs.setTabsClosable(True)
         self.tabs.tabCloseRequested.connect(self.close_tab)
@@ -61,8 +74,15 @@ class Browser(QMainWindow):
         widget = QWidget()
         widget.setLayout(layout)
 
+        width = 800
+        height = 600
         self.setCentralWidget(widget)
-        self.setGeometry(0, 0, 900, 600)
+        screen = QGuiApplication.primaryScreen().availableGeometry()
+        x = (screen.width() - width) // 2
+        y = (screen.height() - height) // 2
+
+        self.setGeometry(x, y, width, height)
+        # self.showFullScreen()
 
         if isIncognito:
             self.add_incognito_tab()
@@ -73,12 +93,74 @@ class Browser(QMainWindow):
         self.setWindowTitle("My First Browser")
         self.setWindowIcon(icon)
         self.show()
+
+        self.buttons = []
+        self.buttons.append(self.minimizeButton)
+        self.buttons.append(self.maximizeButton)
+        self.buttons.append(self.closeButton)
+
+        for button in self.buttons:
+            button.setIconSize(QSize(18, 18))
+            button.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(128, 128, 128, 0.0);
+            }
+            QPushButton:hover {
+                background-color: rgba(128, 128, 128, 0.5);
+            };
+            border-radius: 1px; padding: 3px;
+        """)
+        self.closeButton.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(128, 128, 128, 0.0);
+            }
+            QPushButton:hover {
+                background-color: rgba(255, 51, 51, 0.8);
+            };
+            border-radius: 1px; padding: 3px;
+        """)
     
     # def center(self):
     #     qr = self.frameGeometry()
     #     cp = QDesktopWidget().availableGeometry().center()
     #     qr.moveCenter(cp)
     #     self.move(qr.topLeft())
+    def save_history(self, title, url):
+        # Save the browsing history to a file
+        current_time = datetime.datetime.now()
+        formatted_time = current_time.strftime("%Y-%m-%d %H:%M:%S")
+        
+        with open("history.txt", "a", encoding='utf-8') as f:
+            f.write(f"{title}\t{url}\t{formatted_time}\n")
+    def show_history(self):
+        # self.save_history("test site", "https://chat.openai.com/c/5bcad6a2-cba2-4c75-9a52-388bd7a860af")
+        with open("history.txt", encoding='utf-8') as f:
+            lines = f.readlines()
+
+        self.history = []
+        for line in lines:
+            parts = line.strip().split("\t")
+            title, url, date = parts
+            self.history.insert(0, {'title': title, 'date': date, 'url': url})
+
+        history_widget = HistoryWidget(self.history, self)
+        clear_button = QPushButton("Clear History")
+        clear_button.clicked.connect(history_widget.clear_history)
+        # dialog = QDialog()
+        # dialog.setLayout(layout)
+        # dialog.exec_()
+        self.tabs.addTab(history_widget, "History")
+        self.tabs.setCurrentWidget(history_widget)
+    def clear_history(self):
+        print("Clearing...")
+        try:
+            with open("history.txt", "w", encoding='utf-8') as file:
+                file.write('')
+            print(f"File cleared successfully.")
+        except FileNotFoundError:
+            print(f"File not found.")
+        except Exception as e:
+            print(f"An error occurred while clearing the file: {e}")
 
     def mousePressEvent(self, event):
         self.oldPos = event.globalPosition()
@@ -103,7 +185,7 @@ class Browser(QMainWindow):
         self.tabs.setCurrentWidget(tab)
 
     def add_tab(self, url="https://www.google.com"):
-        tab = BrowserTab(url)
+        tab = BrowserTab(url, self)
         self.tabs.addTab(tab, "New Tab")
         self.tabs.setCurrentWidget(tab)
 
@@ -125,7 +207,11 @@ class Browser(QMainWindow):
         if event.key() in self._keys:
             self._keys[event.key()] = True
             if self._keys[Qt.Key.Key_Control] and self._keys[Qt.Key.Key_T]:
-                self.add_tab()
+                
+                if self.isIncognito:
+                    self.add_incognito_tab()
+                else:
+                    self.add_tab()
             elif self._keys[Qt.Key.Key_Control] and self._keys[Qt.Key.Key_W]:
                 self.close_tab(self.tabs.count() - 1)
             elif self._keys[Qt.Key.Key_Control] and self._keys[Qt.Key.Key_Shift] and self._keys[Qt.Key.Key_N]:

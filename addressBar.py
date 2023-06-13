@@ -28,7 +28,7 @@ class AddressBar(QLineEdit):
     def on_text_changed(self):
         self.timer.start()
 
-    async def process_text_changed(self):
+    def process_text_changed(self):
         text = self.text()
         if not text.startswith('http') and not text.startswith('https'):
             self.model.fetch_data(self.text())

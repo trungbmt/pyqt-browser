@@ -1,18 +1,23 @@
-from PyQt6.QtWidgets import *
-from PyQt6.QtGui import *
-from PyQt6.QtCore import *
-from PyQt6.QtWebEngineWidgets import *
-import qtawesome as qta
-from helper.urlHelper import is_valid_domain
-import sys
-import requests
-from helper.googleSuggestModel import GoogleSuggestModel
-import asyncio
-from PyQt6.QtNetwork import QNetworkProxy
-from PyQt6.QtWidgets import QApplication, QMainWindow
-from incognitoTab import *
-from PyQt6.QtWebEngineWidgets import QWebEngineView
-from PyQt6.QtWebEngineCore import QWebEngineSettings, QWebEngineProfile
+import os
+import openai
+from dotenv import load_dotenv
+load_dotenv()
 
-# for key in Qt.Key.__dict__.items():
-#     print(key[0])
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+def gpt_talk(message):
+  completion = openai.ChatCompletion.create(
+    model="gpt-3.5-turbo",
+    messages=[
+      {"role": "user", "content": "What is facebook?"}
+    ]
+  )
+  return completion.choices[0].message
+def gpt_img():
+  completion = openai.Image.create(
+    prompt="cute girl",
+    n=2,
+    size="1024x1024"
+  )
+  return completion
+print(gpt_img())

@@ -17,8 +17,8 @@ class GoogleSuggestModel(QStandardItemModel):
             f"https://suggestqueries.google.com/complete/search?output=firefox&q={text}"
         )
         self.suggestions = response.json()[1]
-        print(text)
-        print(self.suggestions)
+        # print(text)
+        # print(self.suggestions)
         for suggestion in self.suggestions:
             item = QStandardItem(suggestion)
             self.appendRow(item)

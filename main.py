@@ -16,7 +16,7 @@ from helper.strToBoolean import str2bool
 class Main():
     browsers = []
     def __init__(self):
-        app = QApplication(sys.argv)
+        self.app = QApplication(sys.argv)
         
         parser = argparse.ArgumentParser()
         parser.add_argument('--incognito', type=str2bool, nargs='?', const=True, default=False, help='Enable incognito mode')
@@ -27,7 +27,7 @@ class Main():
         else: 
             self.new_window()
 
-        sys.exit(app.exec())
+        sys.exit(self.app.exec())
 
     def new_window(self):
         browser = Browser(self)
